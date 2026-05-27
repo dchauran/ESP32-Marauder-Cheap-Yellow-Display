@@ -40,17 +40,24 @@ https://github.com/Bodmer/JPEGDecoder
     #endif
   #endif
 
-  #if defined (ARDUINO_ARCH_ESP8266) || defined (ESP32)
+  #if defined (ARDUINO_ARCH_ESP8266)
     #define LOAD_FLASH_FS
     #include <pgmspace.h>
     #include <FS.h>
     #include <LittleFS.h>
-    //#define SPIFFS LittleFS
+    #define JPEGDECODER_FLASH_FS LittleFS
+  #elif defined (ESP32)
+    #define LOAD_FLASH_FS
+    #include <pgmspace.h>
+    #include <FS.h>
+    #include <SPIFFS.h>
+    #define JPEGDECODER_FLASH_FS SPIFFS
   #elif defined (ARDUINO_ARCH_RP2040)
     #define LOAD_FLASH_FS
     #include <FS.h>
     #include <LittleFS.h>
     #define SPIFFS LittleFS
+    #define JPEGDECODER_FLASH_FS LittleFS
     #define TJPGD_LOAD_FFS
   #endif
 

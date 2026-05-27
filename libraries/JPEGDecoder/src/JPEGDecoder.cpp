@@ -308,17 +308,17 @@ int JPEGDecoder::decodeFile(const String& pFilename){
 
 #ifdef LOAD_FLASH_FS
 
-// Call specific to Little_FS
+// Open from the flash filesystem selected for the target architecture.
 int JPEGDecoder::decodeFsFile(const char *pFilename) {
 
-	fs::File pInFile = LittleFS.open( pFilename, "r");
+	fs::File pInFile = JPEGDECODER_FLASH_FS.open( pFilename, "r");
 
 	return decodeFsFile(pInFile);
 }
 
 int JPEGDecoder::decodeFsFile(const String& pFilename) {
 
-	fs::File pInFile = LittleFS.open( pFilename, "r");
+	fs::File pInFile = JPEGDECODER_FLASH_FS.open( pFilename, "r");
 
 	return decodeFsFile(pInFile);
 }

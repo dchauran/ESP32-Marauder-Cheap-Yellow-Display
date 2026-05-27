@@ -46,6 +46,8 @@ void Display::RunSetup()
       uint16_t calData[5] = { 251, 3539, 331, 3534, 6 };
     #elif defined(CYD_35)
       uint16_t calData[5] = { 309, 3465, 297, 3552, 6 };
+    #elif defined(CYD_40)
+      uint16_t calData[5] = { CYD_40_TOUCH_CAL_PORTRAIT };
     #elif defined(TFT_DIY)
       uint16_t calData[5] = { 339, 3470, 237, 3438, 2 };
     #endif

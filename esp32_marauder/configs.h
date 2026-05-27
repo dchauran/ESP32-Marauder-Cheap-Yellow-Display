@@ -133,11 +133,18 @@
     //#define CYD_24
     //#define CYD_24G
     //#define CYD_24CAP
-    #define CYD_28
     //#define CYD_32
     //#define CYD_32CAP
     //#define CYD_35
     //#define CYD_35CAP
+    //#define CYD_40 // E32R40T: 4.0" ST7796/XPT2046 resistive touch, USB Type-C
+
+    // Retain the Arduino IDE default unless a display profile is set through build flags.
+    #if !defined(CYD_22CAP) && !defined(CYD_24) && !defined(CYD_24G) && !defined(CYD_24CAP) && \
+        !defined(CYD_28) && !defined(CYD_32) && !defined(CYD_32CAP) && !defined(CYD_35) && \
+        !defined(CYD_35CAP) && !defined(CYD_40)
+      #define CYD_28
+    #endif
   #endif
 
   #if defined(MARAUDER_V6) || defined(MARAUDER_V6_1)
@@ -809,7 +816,7 @@
         #define ST7789_GMCTRN1 0xE1
       #endif
 
-      #ifdef CYD_35
+      #if defined(CYD_35) || defined(CYD_40)
         #define SCREEN_CHAR_WIDTH 40
         #define HAS_ST7796
         #define BANNER_TEXT_SIZE 2
@@ -821,7 +828,13 @@
         #ifndef TFT_HEIGHT
           #define TFT_HEIGHT 480
         #endif
-      #endif // CYD_35
+
+        #ifdef CYD_40
+          // Initial E32R40T values; replace these two macros with TFT_eSPI calibration output if needed.
+          #define CYD_40_TOUCH_CAL_PORTRAIT 309, 3465, 297, 3552, 6
+          #define CYD_40_TOUCH_CAL_LANDSCAPE 292, 3570, 295, 3436, 3
+        #endif
+      #endif // CYD_35 || CYD_40
 
       #ifdef CYD_35CAP
         #define SCREEN_CHAR_WIDTH 40
@@ -960,7 +973,7 @@
 
       #define SCREEN_BUFFER
 
-      #if defined(CYD_35CAP) || defined(CYD_35)
+      #if defined(CYD_35CAP) || defined(CYD_35) || defined(CYD_40)
         #define MAX_SCREEN_BUFFER 33
       #else
         #define MAX_SCREEN_BUFFER 22
@@ -1716,7 +1729,7 @@
   //// BATTERY STUFF
   #ifdef HAS_BATTERY
     #ifdef MARAUDER_V4
-      #if defined(CYD_35) || defined(CYD_24) || defined(CYD_32) || defined(CYD_32CAP) || defined(CYD_35CAP)
+      #if defined(CYD_35) || defined(CYD_40) || defined(CYD_24) || defined(CYD_32) || defined(CYD_32CAP) || defined(CYD_35CAP)
         #define I2C_SDA 21
         #define I2C_SCL 22
       #elif defined(CYD_28) || defined(CYD_24G) || defined(CYD_24CAP)

@@ -50,6 +50,7 @@ The aim of this project is to port the ESP32-Marauder firmware to the Cheap Yell
 - Fix bluetooth attack LED not turning off
 - Fix status LED for bluetooth stuff
 - Add support for ESP32-3248S035R 3.5" ST7796/XPT2046 Resistive Touch
+- Add support for E32R40T 4.0" ST7796/XPT2046 Resistive Touch USB Type-C
 - Add support for Adafruit MAX17048 battery monitor
 - Update Save/Load Files menu to add for saving and loading AirTags
 - Add logging to SD for Flipper/AirTag sniff
@@ -134,6 +135,32 @@ esptool.py --port /dev/YOURSERIALPORT write_flash 0x1000 ~/Adafruit_WebSerial_ES
 
 For a step-by-step guide, refer to [Smoochiee's tutorial](https://github.com/smoochiee/MARAUDER-FOR-CYD---CHEAP-YELLOW-DISPLAY)
 
+### PlatformIO Method (4.0" E32R40T)
+
+The `cyd40` PlatformIO environment targets the 4.0" USB Type-C E32R40T board with its `ST7796` display and `XPT2046` resistive touch controller. It selects the compatible local TFT_eSPI setup automatically.
+
+1. Install the PlatformIO extension in VS Code and open this repository folder.
+2. Connect the display over USB Type-C.
+3. Build with the PlatformIO toolbar or run:
+
+```bash
+pio run -e cyd40
+```
+
+4. Upload with the toolbar or run:
+
+```bash
+pio run -e cyd40 -t upload
+```
+
+5. Open a serial monitor at `115200` baud when troubleshooting:
+
+```bash
+pio device monitor -e cyd40
+```
+
+The environment uses the existing Arduino configuration requirements: `LOLIN D32`, `80MHz` flash frequency, and the Minimal SPIFFS partition table. Touch calibration is configured by `CYD_40_TOUCH_CAL_PORTRAIT` and `CYD_40_TOUCH_CAL_LANDSCAPE` in `esp32_marauder/configs.h`.
+
 ---
 
 ## Compatibility
@@ -152,6 +179,8 @@ The project has been successfully tested on:
 - [3.5" Capacitive Touch](https://a.co/d/2PFDlvL)
 
 No hardware modifications are required, thanks to **@ggaljoen's** fork of the [TFT_eSPI](https://github.com/ggaljoen/TFT_eSPI) library
+
+Support has been added for the [4.0" Resistive Touch USB Type-C module (E32R40T, ST7796/XPT2046)](https://www.amazon.com/dp/B0FGJJ24S1), pending hardware calibration validation. Enable `CYD_40` in `esp32_marauder/configs.h` and use `User_Setup_cyd40.h` with TFT_eSPI. This board has the same `320x480` ST7796 display resolution as the 3.5" ST7796 version, but uses an XPT2046 resistive touch panel with panel-specific calibration. If touch placement still needs adjustment, run TFT_eSPI's `Touch_calibrate` example and replace `CYD_40_TOUCH_CAL_PORTRAIT` and `CYD_40_TOUCH_CAL_LANDSCAPE` in `configs.h` with the generated values for rotations `0` and `1`.
 
 ---
 
