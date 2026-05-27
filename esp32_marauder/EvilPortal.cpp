@@ -1,6 +1,8 @@
 #include "EvilPortal.h"
 
 AsyncWebServer server(80);
+char apName[MAX_AP_NAME_SIZE] = "PORTAL";
+char index_html[MAX_HTML_SIZE] = "TEST";
 
 EvilPortal::EvilPortal() {
 }

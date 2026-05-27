@@ -8,7 +8,7 @@ char nmeaBuffer[100];
 
 MicroNMEA nmea(nmeaBuffer, sizeof(nmeaBuffer));
 
-HardwareSerial Serial2(GPS_SERIAL_INDEX);
+static HardwareSerial gps_serial(GPS_SERIAL_INDEX);
 
 void GpsInterface::begin() {
 
@@ -25,21 +25,21 @@ void GpsInterface::begin() {
   #endif*/
 
   
-  Serial2.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
+  gps_serial.begin(9600, SERIAL_8N1, GPS_TX, GPS_RX);
 
-  MicroNMEA::sendSentence(Serial2, "$PSTMSETPAR,1201,0x00000042");
-  MicroNMEA::sendSentence(Serial2, "$PSTMSAVEPAR");
+  MicroNMEA::sendSentence(gps_serial, "$PSTMSETPAR,1201,0x00000042");
+  MicroNMEA::sendSentence(gps_serial, "$PSTMSAVEPAR");
 
-  MicroNMEA::sendSentence(Serial2, "$PSTMSRR");
+  MicroNMEA::sendSentence(gps_serial, "$PSTMSRR");
 
   delay(1000);
 
-  if (Serial2.available()) {
+  if (gps_serial.available()) {
     Serial.println("GPS Attached Successfully");
     this->gps_enabled = true;
-    while (Serial2.available()) {
+    while (gps_serial.available()) {
       //Fetch the character one by one
-      char c = Serial2.read();
+      char c = gps_serial.read();
       //Serial.print(c);
       //Pass the character to the library
       nmea.process(c);
@@ -321,7 +321,7 @@ void GpsInterface::flush_queue_textin(){
 }
 
 void GpsInterface::sendSentence(const char* sentence){
-  MicroNMEA::sendSentence(Serial2, sentence);
+  MicroNMEA::sendSentence(gps_serial, sentence);
 }
 
 void GpsInterface::sendSentence(Stream &s, const char* sentence){
@@ -652,9 +652,9 @@ String GpsInterface::getNmeaNotparsed() {
 }
 
 void GpsInterface::main() {
-  while (Serial2.available()) {
+  while (gps_serial.available()) {
     //Fetch the character one by one
-    char c = Serial2.read();
+    char c = gps_serial.read();
     //Serial.print(c);
     //Pass the character to the library
     nmea.process(c);

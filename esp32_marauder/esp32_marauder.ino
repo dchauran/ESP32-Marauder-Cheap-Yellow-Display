@@ -5,14 +5,16 @@ Partition Scheme: Minimal SPIFFS
 https://www.online-utility.org/image/convert/to/XBM
 */
 
-#include <bb_captouch.h>
 #include "configs.h"
-#include "TouchDrvGT911.hpp"
 
-TouchDrvGT911 touch;
+#if defined(CYD_32CAP) || defined(CYD_35CAP)
+  #include "TouchDrvGT911.hpp"
+  TouchDrvGT911 touch;
+#endif
 
 #if defined(CYD_24CAP) || defined(CYD_22CAP)
-BBCapTouch bbct;
+  #include <bb_captouch.h>
+  BBCapTouch bbct;
 const char *szNames[] = {"Unknown", "FT6x36", "GT911", "CST820"};
 #endif
 
@@ -171,7 +173,7 @@ void setup()
   
   backlightOff();
   
-  #if BATTERY_ANALOG_ON == 1
+  #if BATTERY_ANALOG_ON == 1 && !defined(CYD_40)
     pinMode(BATTERY_PIN, OUTPUT);
     pinMode(CHARGING_PIN, INPUT);
   #endif

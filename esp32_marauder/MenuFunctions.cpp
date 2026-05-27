@@ -2,9 +2,11 @@
 #include "lang_var.h"
 //#include "icons.h"
 #include "configs.h"
-#include "TouchDrvGT911.hpp"
 
-TouchDrvGT911 touch;
+#if defined(CYD_32CAP) || defined(CYD_35CAP)
+  #include "TouchDrvGT911.hpp"
+  extern TouchDrvGT911 touch;
+#endif
 
 
 
@@ -1005,41 +1007,44 @@ void MenuFunctions::main(uint32_t currentTime)
           }
           #endif
 
-          for (uint8_t b = 0; b < current_menu->list->size(); b++) {
+          const uint16_t visible_count = min((uint16_t)BUTTON_ARRAY_LEN,
+                                             (uint16_t)(current_menu->list->size() - this->menu_start_index));
+          for (uint16_t b = 0; b < visible_count; b++) {
+            const uint16_t item_index = this->menu_start_index + b;
             display_obj.tft.setFreeFont(MENU_FONT);
             if (display_obj.key[b].justPressed()) {
-                display_obj.key[b].drawButton(true, current_menu->list->get(b).name); // Pressed state
-                if (current_menu->list->get(b).name != text09) {
-                    uint16_t icon_color = this->getColor(current_menu->list->get(b).color);
+                display_obj.key[b].drawButton(true, current_menu->list->get(item_index).name); // Pressed state
+                if (current_menu->list->get(item_index).name != text09) {
+                    uint16_t icon_color = this->getColor(current_menu->list->get(item_index).color);
                     display_obj.tft.setTextColor(icon_color, TFT_BLACK); // Set color state explicitly
                     display_obj.tft.drawXBitmap(0,
-                                                KEY_Y + b * (KEY_H + KEY_SPACING_Y) - (ICON_H / 2),
-                                                menu_icons[current_menu->list->get(b).icon],
-                                                ICON_W, 
-                                                ICON_H,
-                                                this->getColor(current_menu->list->get(b).color),
-                                                TFT_BLACK);
-                    //Serial.println("Pressed icon for " + current_menu->list->get(b).name + " with color: " + String(icon_color, HEX));
+                                                 KEY_Y + b * (KEY_H + KEY_SPACING_Y) - (ICON_H / 2),
+                                                menu_icons[current_menu->list->get(item_index).icon],
+                                                 ICON_W,
+                                                 ICON_H,
+                                                this->getColor(current_menu->list->get(item_index).color),
+                                                 TFT_BLACK);
+                    //Serial.println("Pressed icon for " + current_menu->list->get(item_index).name + " with color: " + String(icon_color, HEX));
                 }
             }
 
             // If button was just release, execute the button's function
         if ((display_obj.key[b].justReleased()) && (!pressed))
         {
-          display_obj.key[b].drawButton(false, current_menu->list->get(b).name);
-          current_menu->list->get(b).callable();
+          display_obj.key[b].drawButton(false, current_menu->list->get(item_index).name);
+          current_menu->list->get(item_index).callable();
         }
         // This
         else if ((display_obj.key[b].justReleased()) && (pressed)) {
-          display_obj.key[b].drawButton(false, current_menu->list->get(b).name);
-          if (current_menu->list->get(b).name != text09)
+          display_obj.key[b].drawButton(false, current_menu->list->get(item_index).name);
+          if (current_menu->list->get(item_index).name != text09)
             display_obj.tft.drawXBitmap(0,
                                         KEY_Y + b * (KEY_H + KEY_SPACING_Y) - (ICON_H / 2),
-                                        menu_icons[current_menu->list->get(b).icon],
+                                        menu_icons[current_menu->list->get(item_index).icon],
                                         ICON_W,
                                         ICON_H,
                                         TFT_BLACK,
-                                        this->getColor(current_menu->list->get(b).color));
+                                        this->getColor(current_menu->list->get(item_index).color));
         }
   
         display_obj.tft.setFreeFont(NULL);
@@ -1155,15 +1160,22 @@ void MenuFunctions::battery(bool initial)
     uint8_t n = 0;
     byte battery_analog_sample[10];
     byte deviation;
-    if (battery_count == BATTERY_CHECK - 5)  digitalWrite(BATTERY_PIN, HIGH);
-    else if (battery_count == 5) digitalWrite(BATTERY_PIN, LOW);
+    #ifndef CYD_40
+      if (battery_count == BATTERY_CHECK - 5)  digitalWrite(BATTERY_PIN, HIGH);
+      else if (battery_count == 5) digitalWrite(BATTERY_PIN, LOW);
+    #endif
     if (battery_count == 0) {
       battery_analog = 0;
       for (n = 9; n > 0; n--)battery_analog_array[n] = battery_analog_array[n - 1];
       for (n = 0; n < 10; n++) {
-        battery_analog_sample[n] = map((analogRead(ANALOG_PIN) * 5), 2400, 4200, 0, 100);
-        if (battery_analog_sample[n] > 100) battery_analog_sample[n] = 100;
-        else if (battery_analog_sample[n] < 0) battery_analog_sample[n] = 0;
+        #ifdef CYD_40
+          const long battery_mv = analogReadMilliVolts(ANALOG_PIN) * 2L;
+          battery_analog_sample[n] = (byte)constrain(map(battery_mv, 3000, 4200, 0, 100), 0, 100);
+        #else
+          battery_analog_sample[n] = map((analogRead(ANALOG_PIN) * 5), 2400, 4200, 0, 100);
+          if (battery_analog_sample[n] > 100) battery_analog_sample[n] = 100;
+          else if (battery_analog_sample[n] < 0) battery_analog_sample[n] = 0;
+        #endif
         battery_analog += battery_analog_sample[n];
       }
       battery_analog = battery_analog / 10;
@@ -1195,8 +1207,11 @@ void MenuFunctions::battery2(bool initial)
 {
   uint16_t the_color;
   Serial.println("battery2 called");
-  if ( digitalRead(CHARGING_PIN) == 1) the_color = TFT_BLUE;
-  else if (battery_analog < 20) the_color = TFT_RED;
+  #ifndef CYD_40
+    if (digitalRead(CHARGING_PIN) == 1) the_color = TFT_BLUE;
+    else
+  #endif
+  if (battery_analog < 20) the_color = TFT_RED;
   else if (battery_analog < 40)  the_color = TFT_YELLOW;
   else the_color = TFT_GREEN;
 
@@ -1613,13 +1628,13 @@ void MenuFunctions::runBoolSetting(String key) {
 }
 
 String MenuFunctions::callSetting(String key) {
-  specSettingMenu.name = key;
-  
   String setting_type = settings_obj.getSettingType(key);
 
   if (setting_type == "bool") {
     return "bool";
   }
+
+  return "";
 }
 
 void MenuFunctions::displaySetting(String key, Menu* menu, int index) {
@@ -1645,6 +1660,25 @@ void MenuFunctions::displaySetting(String key, Menu* menu, int index) {
     display_obj.tft.setTextColor(TFT_GREEN);
     display_obj.tft.println(F(text_table1[5]));
     node.selected = true;
+  }
+
+  display_obj.tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+  display_obj.tft.setCursor(0, 124);
+  if (key == "ForcePMKID") {
+    display_obj.tft.println("During EAPOL capture, send deauth frames");
+    display_obj.tft.println("to prompt clients to reconnect.");
+  }
+  else if (key == "ForceProbe") {
+    display_obj.tft.println("Stored setting only; not currently used by");
+    display_obj.tft.println("scan or attack logic in this build.");
+  }
+  else if (key == "SavePCAP") {
+    display_obj.tft.println("Write captured packets and logs to storage");
+    display_obj.tft.println("when the selected scan supports saving.");
+  }
+  else if (key == "EnableLED") {
+    display_obj.tft.println("Allow scan and status effects on the board");
+    display_obj.tft.println("RGB LED.");
   }
 
   // Put local copy back into menu
@@ -2663,10 +2697,21 @@ void MenuFunctions::RunSetup()
     if (this->callSetting(settings_obj.setting_index_to_name(i)) == "bool")
       this->addNodes(&settingsMenu, settings_obj.setting_index_to_name(i), TFTLIGHTGREY, NULL, 0, [this, i]() {
       settings_obj.toggleSetting(settings_obj.setting_index_to_name(i));
+      specSettingMenu.name = settings_obj.setting_index_to_name(i);
       this->changeMenu(&specSettingMenu);
       this->displaySetting(settings_obj.setting_index_to_name(i), &settingsMenu, i + 1);
     }, settings_obj.loadSetting<bool>(settings_obj.setting_index_to_name(i)));
   }
+  #ifdef CYD_40
+    this->addNodes(&settingsMenu, "Touch Calibrate", TFTCYAN, NULL, 0, [this]() {
+      display_obj.touchCalibrationTest(false);
+      this->orientDisplay();
+    });
+    this->addNodes(&settingsMenu, "Touch Calibrate Landscape", TFTCYAN, NULL, 0, [this]() {
+      display_obj.touchCalibrationTest(true);
+      this->orientDisplay();
+    });
+  #endif
 
   // Specific setting menu
   specSettingMenu.parentMenu = &settingsMenu;
@@ -3137,10 +3182,10 @@ void MenuFunctions::displayCurrentMenu(int start_index)
             display_obj.key[i - start_index].drawButton(true, current_menu->list->get(i).name);
           }
           else {
-            display_obj.key[i].drawButton(false, current_menu->list->get(i).name);
+            display_obj.key[i - start_index].drawButton(false, current_menu->list->get(i).name);
           }
         #else
-          display_obj.key[i].drawButton(false, current_menu->list->get(i).name);
+          display_obj.key[i - start_index].drawButton(false, current_menu->list->get(i).name);
         #endif
 
         if ((current_menu->list->get(i).name != text09) && (current_menu->list->get(i).icon != 255))

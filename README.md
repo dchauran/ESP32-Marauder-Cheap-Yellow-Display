@@ -161,6 +161,10 @@ pio device monitor -e cyd40
 
 The environment uses the existing Arduino configuration requirements: `LOLIN D32`, `80MHz` flash frequency, and the Minimal SPIFFS partition table. Touch calibration is configured by `CYD_40_TOUCH_CAL_PORTRAIT` and `CYD_40_TOUCH_CAL_LANDSCAPE` in `esp32_marauder/configs.h`.
 
+The E32R40T battery header and charging circuit are supported through its onboard `BAT_ADC` divider on GPIO34. Its external UART header is shared with the onboard Type-C/CH340 serial bridge. GPS on that header can be compiled in by adding `-D CYD_40_ENABLE_UART_GPS` to the `cyd40` `build_flags`, but USB serial monitoring is not usable at the same time.
+
+For touch calibration, open the serial monitor and run `touchcal` for portrait mode, then `touchcal landscape` for the rotated scan screens. The firmware asks for four corner touches, opens a coordinate test canvas, and prints the generated definition over serial. Copy the generated values into `esp32_marauder/configs.h` and rebuild.
+
 ---
 
 ## Compatibility

@@ -217,6 +217,9 @@ void CommandLine::runCommand(String input) {
     Serial.println(HELP_GPS_DATA_CMD);
     Serial.println(HELP_GPS_CMD);
     Serial.println(HELP_NMEA_CMD);
+    #if defined(HAS_SCREEN) && defined(CYD_40)
+      Serial.println(HELP_TOUCH_CAL_CMD);
+    #endif
     
     // WiFi sniff/scan
     Serial.println(HELP_EVIL_PORTAL_CMD);
@@ -270,6 +273,13 @@ void CommandLine::runCommand(String input) {
   }
 
   // Stop Scan
+  #if defined(HAS_SCREEN) && defined(CYD_40)
+    if (cmd_args.get(0) == TOUCH_CAL_CMD) {
+      display_obj.touchCalibrationTest(cmd_args.size() > 1 && cmd_args.get(1) == "landscape");
+      return;
+    }
+  #endif
+
   if (cmd_args.get(0) == STOPSCAN_CMD) {
     //if (wifi_scan_obj.currentScanMode == OTA_UPDATE) {
     //  wifi_scan_obj.currentScanMode = WIFI_SCAN_OFF;

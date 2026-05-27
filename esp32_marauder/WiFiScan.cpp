@@ -1,9 +1,11 @@
 #include "WiFiScan.h"
 #include "lang_var.h"
-#include "TouchDrvGT911.hpp"
 //#include "MenuFunctions.h"
 
-TouchDrvGT911 touch;
+#if defined(CYD_32CAP) || defined(CYD_35CAP)
+  #include "TouchDrvGT911.hpp"
+  extern TouchDrvGT911 touch;
+#endif
 
 #if defined(CYD_24CAP) || defined(CYD_22CAP)
 #include <bb_captouch.h>

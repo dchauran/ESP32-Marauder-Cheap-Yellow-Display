@@ -120,7 +120,6 @@
   #endif
 
   #ifdef MARAUDER_V4
-    #define HAS_BATTERY
     #define HAS_BT
     #define HAS_NEOPIXEL_LED
     //#define HAS_PWR_MGMT
@@ -128,7 +127,14 @@
     #define HAS_FULL_SCREEN
     #define HAS_SD
     #define USE_SD
-    #define HAS_GPS
+    // E32R40T battery level is read through GPIO34 ADC, not an I2C fuel gauge.
+    // Its external UART header shares GPIO1/GPIO3 with the onboard Type-C serial bridge.
+    #ifndef CYD_40
+      #define HAS_BATTERY
+    #endif
+    #if !defined(CYD_40) || defined(CYD_40_ENABLE_UART_GPS)
+      #define HAS_GPS
+    #endif
     //#define CYD_22CAP
     //#define CYD_24
     //#define CYD_24G
@@ -830,9 +836,9 @@
         #endif
 
         #ifdef CYD_40
-          // Initial E32R40T values; replace these two macros with TFT_eSPI calibration output if needed.
-          #define CYD_40_TOUCH_CAL_PORTRAIT 309, 3465, 297, 3552, 6
-          #define CYD_40_TOUCH_CAL_LANDSCAPE 292, 3570, 295, 3436, 3
+          // Measured E32R40T values; run `touchcal landscape` to replace the landscape default.
+          #define CYD_40_TOUCH_CAL_PORTRAIT 202, 3623, 265, 3673, 4
+          #define CYD_40_TOUCH_CAL_LANDSCAPE 261, 3682, 207, 3626, 7
         #endif
       #endif // CYD_35 || CYD_40
 

@@ -7,7 +7,11 @@
 
 #ifdef HAS_SCREEN
 
-#define BATTERY_ANALOG_ON 0
+#if defined(CYD_40)
+  #define BATTERY_ANALOG_ON 1
+#else
+  #define BATTERY_ANALOG_ON 0
+#endif
 
 #include "WiFiScan.h"
 #include "BatteryInterface.h"
@@ -31,9 +35,11 @@ extern Settings settings_obj;
 #define FLASH_BUTTON 0
 
 #if BATTERY_ANALOG_ON == 1
-  #if !defined(CYD_32CAP) || !defined(CYD_35CAP)  || !defined(CYD_24CAP) || !defined(CYD_22CAP)
+  #if defined(CYD_40)
+    #define ANALOG_PIN 34
+  #elif !defined(CYD_32CAP) || !defined(CYD_35CAP)  || !defined(CYD_24CAP) || !defined(CYD_22CAP)
     #define BATTERY_PIN 13
-    #define ANALOG_PIN 34 
+    #define ANALOG_PIN 34
     #define CHARGING_PIN 27
   #endif
 #endif

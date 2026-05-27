@@ -69,6 +69,77 @@ void Display::RunSetup()
   #endif
 }
 
+#ifdef CYD_40
+void Display::touchCalibrationTest(bool landscape)
+{
+  uint16_t calibration[5];
+
+  tft.setRotation(landscape ? 1 : 0);
+  digitalWrite(TFT_BL, TFT_BACKLIGHT_ON);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(8, 8);
+  tft.println(landscape ? "CYD40 landscape calibration" : "CYD40 portrait calibration");
+  tft.println("Touch each highlighted corner.");
+  tft.println("Use a stylus for best accuracy.");
+  tft.calibrateTouch(calibration, TFT_MAGENTA, TFT_BLACK, 15);
+  tft.setTouch(calibration);
+
+  Serial.println();
+  Serial.printf("#define %s %u, %u, %u, %u, %u\n",
+                landscape ? "CYD_40_TOUCH_CAL_LANDSCAPE" : "CYD_40_TOUCH_CAL_PORTRAIT",
+                calibration[0], calibration[1], calibration[2], calibration[3], calibration[4]);
+  Serial.println("Touch test active; touch EXIT on screen when finished.");
+
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(8, 8);
+  tft.println("Touch test: dots should follow your finger");
+  tft.printf("CAL: %u, %u, %u, %u, %u\n",
+             calibration[0], calibration[1], calibration[2], calibration[3], calibration[4]);
+  for (uint16_t grid_x = 0; grid_x < tft.width(); grid_x += 40) {
+    tft.drawFastVLine(grid_x, 48, tft.height() - 48, TFT_DARKGREY);
+  }
+  for (uint16_t grid_y = 48; grid_y < tft.height(); grid_y += 40) {
+    tft.drawFastHLine(0, grid_y, tft.width(), TFT_DARKGREY);
+  }
+  const uint16_t exit_x = tft.width() - 80;
+  const uint16_t exit_y = tft.height() - 38;
+  tft.fillRect(exit_x, exit_y, 76, 34, TFT_RED);
+  tft.setTextColor(TFT_WHITE, TFT_RED);
+  tft.drawCentreString("EXIT", exit_x + 38, exit_y + 10, 2);
+
+  while (true) {
+    uint16_t touch_x = 0;
+    uint16_t touch_y = 0;
+    if (tft.getTouch(&touch_x, &touch_y, 600)) {
+      Serial.printf("Touch: x=%u y=%u\n", touch_x, touch_y);
+      tft.fillRect(0, 28, tft.width(), 18, TFT_BLACK);
+      tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+      tft.setCursor(8, 30);
+      tft.printf("x=%u y=%u", touch_x, touch_y);
+
+      if (touch_x >= exit_x && touch_y >= exit_y) {
+        while (tft.getTouch(&touch_x, &touch_y, 600)) {
+          delay(10);
+        }
+        break;
+      }
+      tft.fillCircle(touch_x, touch_y, 3, TFT_CYAN);
+      delay(30);
+    }
+  }
+
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setCursor(8, 8);
+  tft.println("Calibration printed to serial.");
+  tft.println("Install the values and reboot.");
+  Serial.println("Touch test finished. Install the printed calibration values and rebuild.");
+}
+#endif
+
 void Display::drawFrame()
 {
   tft.drawRect(FRAME_X, FRAME_Y, FRAME_W, FRAME_H, TFT_BLACK);
