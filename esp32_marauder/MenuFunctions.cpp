@@ -2,6 +2,11 @@
 #include "lang_var.h"
 //#include "icons.h"
 #include "configs.h"
+#include "esp_sleep.h"
+
+#ifndef TFT_SLPIN
+  #define TFT_SLPIN 0x10
+#endif
 
 #if defined(CYD_32CAP) || defined(CYD_35CAP)
   #include "TouchDrvGT911.hpp"
@@ -1623,6 +1628,30 @@ void MenuFunctions::orientDisplay()
   changeMenu(current_menu);
 }
 
+#ifdef CYD_40
+void MenuFunctions::softPowerOff()
+{
+  wifi_scan_obj.currentScanMode = WIFI_SCAN_OFF;
+  wifi_scan_obj.shutdownWiFi();
+  wifi_scan_obj.shutdownBLE();
+
+  display_obj.tft.writecommand(TFT_DISPOFF);
+  display_obj.tft.writecommand(TFT_SLPIN);
+  delay(120);
+
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, !TFT_BACKLIGHT_ON);
+
+  pinMode(GPIO_NUM_0, INPUT_PULLUP);
+  esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_0, 0);
+
+  Serial.println("Entering deep sleep. Press BOOT to wake, or RESET to reboot.");
+  Serial.flush();
+  esp_deep_sleep_start();
+}
+#endif
+
 void MenuFunctions::runBoolSetting(String key) {
   display_obj.tftDrawRedOnOffButton();
 }
@@ -2510,6 +2539,12 @@ void MenuFunctions::RunSetup()
   this->addNodes(&deviceMenu, text08, TFTNAVY, NULL, KEYBOARD_ICO, [this]() {
     this->changeMenu(&settingsMenu);
   });
+
+  #ifdef CYD_40
+    this->addNodes(&deviceMenu, "Power Off", TFTRED, NULL, SHUTDOWN, [this]() {
+      this->softPowerOff();
+    });
+  #endif
 
   #ifdef HAS_SD
     if (sd_obj.supported) {
