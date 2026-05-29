@@ -152,6 +152,7 @@ void Display::tftDrawRedOnOffButton() {
   tft.setTextColor(TFT_WHITE);
   tft.setTextSize(2);
   tft.setTextDatum(MC_DATUM);
+  tft.drawString(text04, REDBUTTON_X + (REDBUTTON_W / 2), REDBUTTON_Y + (REDBUTTON_H / 2));
   tft.drawString(text03, GREENBUTTON_X + (GREENBUTTON_W / 2), GREENBUTTON_Y + (GREENBUTTON_H / 2));
   this->SwitchOn = false;
 }
@@ -164,6 +165,7 @@ void Display::tftDrawGreenOnOffButton() {
   tft.setTextSize(2);
   tft.setTextDatum(MC_DATUM);
   tft.drawString(text04, REDBUTTON_X + (REDBUTTON_W / 2) + 1, REDBUTTON_Y + (REDBUTTON_H / 2));
+  tft.drawString(text03, GREENBUTTON_X + (GREENBUTTON_W / 2), GREENBUTTON_Y + (GREENBUTTON_H / 2));
   this->SwitchOn = true;
 }
 

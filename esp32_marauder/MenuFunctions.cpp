@@ -13,6 +13,11 @@
   extern TouchDrvGT911 touch;
 #endif
 
+static bool pointInRect(uint16_t x, uint16_t y, uint16_t rect_x, uint16_t rect_y, uint16_t rect_w, uint16_t rect_h)
+{
+  return x >= rect_x && x < rect_x + rect_w && y >= rect_y && y < rect_y + rect_h;
+}
+
 
 
 extern const unsigned char menu_icons[][66];
@@ -971,6 +976,36 @@ void MenuFunctions::main(uint32_t currentTime)
 #endif
 
 #if defined(HAS_ILI9341) || defined(HAS_ST7796) || defined(HAS_ST7789)
+    #ifdef HAS_SCREEN
+      if (current_menu == &specSettingMenu && this->current_setting_key != "") {
+        if (pressed) {
+          #if defined(CYD_32CAP) || defined(CYD_35CAP)
+            this->pending_setting_value = -1;
+            for (int16_t i = 0; i < points && i < 5; i++) {
+              if (pointInRect(t_x[i], t_y[i], REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H)) {
+                this->pending_setting_value = 0;
+                break;
+              }
+              if (pointInRect(t_x[i], t_y[i], GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H)) {
+                this->pending_setting_value = 1;
+                break;
+              }
+            }
+          #else
+            if (pointInRect(t_x, t_y, REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H))
+              this->pending_setting_value = 0;
+            else if (pointInRect(t_x, t_y, GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H))
+              this->pending_setting_value = 1;
+          #endif
+        }
+        else if (this->pending_setting_value >= 0) {
+          this->applyBoolSetting(this->current_setting_key, this->pending_setting_value == 1);
+          this->pending_setting_value = -1;
+          return;
+        }
+      }
+    #endif
+
     if ((wifi_scan_obj.currentScanMode != WIFI_ATTACK_BEACON_SPAM) &&
         (wifi_scan_obj.currentScanMode != WIFI_ATTACK_AP_SPAM) &&
         (wifi_scan_obj.currentScanMode != WIFI_ATTACK_AUTH) &&
@@ -1666,8 +1701,23 @@ String MenuFunctions::callSetting(String key) {
   return "";
 }
 
+String MenuFunctions::settingMenuLabel(String key) {
+  if (settings_obj.getSettingType(key) == "bool") {
+    return key + ": " + (settings_obj.loadSetting<bool>(key) ? text_table1[5] : text_table1[4]);
+  }
+
+  return key;
+}
+
+void MenuFunctions::applyBoolSetting(String key, bool value) {
+  settings_obj.saveSetting<bool>(key, value);
+  this->displaySetting(key, &settingsMenu, this->current_setting_index);
+}
+
 void MenuFunctions::displaySetting(String key, Menu* menu, int index) {
   specSettingMenu.name = key;
+  this->current_setting_key = key;
+  this->current_setting_index = index;
 
   bool setting_value = settings_obj.loadSetting<bool>(key);
 
@@ -1676,21 +1726,25 @@ void MenuFunctions::displaySetting(String key, Menu* menu, int index) {
 
   display_obj.tft.setTextWrap(false);
   display_obj.tft.setFreeFont(NULL);
-  display_obj.tft.setCursor(0, 100);
   display_obj.tft.setTextSize(1);
+  display_obj.tft.fillRect(0, 116, SCREEN_WIDTH, 80, TFT_BLACK);
 
   // Set local copy value
   if (!setting_value) {
-    display_obj.tft.setTextColor(TFT_RED);
-    display_obj.tft.println(F(text_table1[4]));
     node.selected = false;
   }
   else {
-    display_obj.tft.setTextColor(TFT_GREEN);
-    display_obj.tft.println(F(text_table1[5]));
     node.selected = true;
   }
 
+  if (setting_value)
+    display_obj.tftDrawGreenOnOffButton();
+  else
+    display_obj.tftDrawRedOnOffButton();
+
+  display_obj.tft.setFreeFont(NULL);
+  display_obj.tft.setTextSize(1);
+  display_obj.tft.setTextDatum(TL_DATUM);
   display_obj.tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
   display_obj.tft.setCursor(0, 124);
   if (key == "ForcePMKID") {
@@ -1711,6 +1765,7 @@ void MenuFunctions::displaySetting(String key, Menu* menu, int index) {
   }
 
   // Put local copy back into menu
+  node.name = this->settingMenuLabel(key);
   menu->list->set(index, node);
     
 }
@@ -1865,6 +1920,11 @@ void MenuFunctions::RunSetup()
   this->addNodes(&mainMenu, text_table1[30], TFTLIGHTGREY, NULL, REBOOT, []() {
     ESP.restart();
   });
+  #ifdef CYD_40
+    this->addNodes(&mainMenu, "Power Off", TFTRED, NULL, SHUTDOWN, [this]() {
+      this->softPowerOff();
+    });
+  #endif
 
   // Build WiFi Menu
   wifiMenu.parentMenu = &mainMenu; // Main Menu is second menu parent
@@ -2540,12 +2600,6 @@ void MenuFunctions::RunSetup()
     this->changeMenu(&settingsMenu);
   });
 
-  #ifdef CYD_40
-    this->addNodes(&deviceMenu, "Power Off", TFTRED, NULL, SHUTDOWN, [this]() {
-      this->softPowerOff();
-    });
-  #endif
-
   #ifdef HAS_SD
     if (sd_obj.supported) {
       this->addNodes(&deviceMenu, "Delete SD Files", TFTCYAN, NULL, SD_UPDATE, [this]() {
@@ -2730,8 +2784,7 @@ void MenuFunctions::RunSetup()
   });
   for (int i = 0; i < settings_obj.getNumberSettings(); i++) {
     if (this->callSetting(settings_obj.setting_index_to_name(i)) == "bool")
-      this->addNodes(&settingsMenu, settings_obj.setting_index_to_name(i), TFTLIGHTGREY, NULL, 0, [this, i]() {
-      settings_obj.toggleSetting(settings_obj.setting_index_to_name(i));
+      this->addNodes(&settingsMenu, this->settingMenuLabel(settings_obj.setting_index_to_name(i)), TFTLIGHTGREY, NULL, 0, [this, i]() {
       specSettingMenu.name = settings_obj.setting_index_to_name(i);
       this->changeMenu(&specSettingMenu);
       this->displaySetting(settings_obj.setting_index_to_name(i), &settingsMenu, i + 1);

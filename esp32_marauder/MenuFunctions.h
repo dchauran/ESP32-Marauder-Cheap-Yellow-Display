@@ -143,6 +143,9 @@ class MenuFunctions
     uint8_t mini_kb_index = 0;
     uint8_t old_gps_sat_count = 0;
     uint8_t max_graph_value = 0;
+    String current_setting_key = "";
+    int current_setting_index = -1;
+    int8_t pending_setting_value = -1;
 
     // Main menu stuff
     Menu mainMenu;
@@ -208,6 +211,8 @@ class MenuFunctions
     void battery2(bool initial = false);
     void showMenuList(Menu* menu, int layer);
     String callSetting(String key);
+    String settingMenuLabel(String key);
+    void applyBoolSetting(String key, bool value);
     void runBoolSetting(String ley);
     void displaySetting(String key, Menu* menu, int index);
     void buttonSelected(int b, int x = -1);
